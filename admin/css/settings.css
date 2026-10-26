@@ -1,0 +1,392 @@
+/*
+ * Tokens copied 1:1 from Dáva's own dashboard theme (apps/web/src/index.css)
+ * so this WordPress settings screen reads as the same product, not a
+ * separately-designed admin page. Scoped under .dava-tracking-wrap only —
+ * never touches the rest of wp-admin.
+ */
+.dava-tracking-wrap {
+  --dava-background: oklch(1 0 0);
+  --dava-foreground: oklch(0.145 0 0);
+  --dava-card: oklch(1 0 0);
+  --dava-primary: oklch(0.2 0 0);
+  --dava-primary-foreground: oklch(0.97 0.014 254.604);
+  --dava-muted: oklch(0.97 0 0);
+  --dava-muted-foreground: oklch(0.556 0 0);
+  --dava-border: oklch(0.922 0 0);
+  --dava-ring: oklch(0.708 0 0);
+  --dava-accent: oklch(0.696 0.17 162.48); /* brand teal, chart-2 */
+  --dava-accent-bg: oklch(0.696 0.17 162.48 / 12%);
+  --dava-radius: 0.45rem;
+
+  max-width: none;
+  margin-right: 20px;
+  font-family:
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    Helvetica,
+    Arial,
+    sans-serif;
+  color: var(--dava-foreground);
+}
+
+.dava-tracking-tabs.nav-tab-wrapper {
+  display: flex;
+  gap: 4px;
+  background: white;
+  border: none;
+  border-radius: calc(var(--dava-radius) * 0.8);
+  padding: 4px !important;
+  margin-bottom: 12px !important;
+  width: 100%;
+}
+
+.dava-tracking-tabs .nav-tab {
+  margin: 0;
+  padding: 6px 16px;
+  border: none;
+  border-radius: calc(var(--dava-radius) * 0.6);
+  background: transparent;
+  font-size: 14px;
+  outline: none;
+  font-weight: 500;
+  color: var(--dava-muted-foreground);
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease,
+    box-shadow 0.15s ease;
+  outline: none;
+}
+
+.dava-tracking-tabs .nav-tab:hover,
+.dava-tracking-tabs .nav-tab:focus {
+  background: var(--dava-foreground);
+  color: white;
+}
+
+.dava-tracking-tabs .nav-tab-active,
+.dava-tracking-tabs .nav-tab-active:hover {
+  background: var(--dava-foreground);
+  color: white;
+  outline: none;
+}
+
+.dava-tracking-tab-panel {
+  display: none;
+}
+
+.dava-tracking-tab-panel.is-active {
+  display: block;
+}
+
+.dava-tracking-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 10px;
+  padding: 40px 0 32px;
+}
+
+.dava-tracking-brand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.dava-tracking-logo {
+  height: 34px;
+  width: auto;
+}
+
+.dava-tracking-subtitle {
+  margin: 0;
+  color: var(--dava-muted-foreground);
+}
+
+.dava-tracking-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 360px;
+  gap: 24px;
+  align-items: start;
+}
+
+.dava-tracking-main {
+  min-width: 0;
+}
+
+.dava-tracking-sidebar {
+  position: sticky;
+  top: 32px;
+}
+
+.dava-tracking-sidebar .dava-tracking-card h2 {
+  margin-bottom: 8px;
+}
+
+.dava-tracking-sidebar .description {
+  margin: 0 0 16px;
+}
+
+.dava-tracking-plugin-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.dava-tracking-plugin-list li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 0;
+  border-top: 1px solid var(--dava-border);
+  font-size: 13px;
+}
+
+.dava-tracking-plugin-list li:first-child {
+  border-top: none;
+}
+
+.dava-tracking-plugin-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.dava-tracking-plugin-dot.is-detected {
+  background: var(--dava-accent);
+}
+
+.dava-tracking-plugin-dot.is-missing {
+  background: var(--dava-border);
+}
+
+.dava-tracking-plugin-list li span:nth-child(2) {
+  flex: 1;
+  font-weight: 500;
+  color: var(--dava-foreground);
+}
+
+.dava-tracking-plugin-status {
+  color: var(--dava-muted-foreground);
+  font-size: 12px;
+}
+
+@media (max-width: 960px) {
+  .dava-tracking-body {
+    grid-template-columns: 1fr;
+  }
+
+  .dava-tracking-sidebar {
+    position: static;
+  }
+}
+
+.dava-tracking-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  padding: 5px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.dava-tracking-badge.is-connected {
+  background: var(--dava-accent-bg);
+  color: color-mix(in oklch, var(--dava-accent) 70%, black);
+}
+
+.dava-tracking-badge.is-disconnected {
+  background: var(--dava-muted);
+  color: var(--dava-muted-foreground);
+}
+
+.dava-tracking-badge.is-warning {
+  background: oklch(0.769 0.188 70.08 / 15%);
+  color: color-mix(in oklch, oklch(0.769 0.188 70.08) 60%, black);
+}
+
+.dava-tracking-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.dava-tracking-banner {
+  padding: 12px 16px;
+  border-radius: calc(var(--dava-radius) * 0.8);
+  margin-bottom: 20px;
+  font-size: 14px;
+}
+
+.dava-tracking-banner.is-success {
+  background: var(--dava-accent-bg);
+  color: color-mix(in oklch, var(--dava-accent) 70%, black);
+}
+
+.dava-tracking-banner.is-error {
+  background: oklch(0.577 0.245 27.325 / 10%);
+  color: oklch(0.577 0.245 27.325);
+}
+
+.dava-tracking-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 8px;
+}
+
+.dava-tracking-card-header h2 {
+  margin: 0;
+}
+
+.dava-tracking-card-header form {
+  margin: 0;
+}
+
+.dava-tracking-log {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.dava-tracking-log th {
+  text-align: left;
+  padding: 8px 12px 8px 0;
+  color: var(--dava-muted-foreground);
+  font-weight: 600;
+  border-bottom: 1px solid var(--dava-border);
+}
+
+.dava-tracking-log td {
+  padding: 10px 12px 10px 0;
+  border-bottom: 1px solid var(--dava-border);
+  vertical-align: top;
+}
+
+.dava-tracking-log tr:last-child td {
+  border-bottom: none;
+}
+
+.dava-tracking-log-status {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.dava-tracking-log-status.is-success {
+  background: var(--dava-accent-bg);
+  color: color-mix(in oklch, var(--dava-accent) 70%, black);
+}
+
+.dava-tracking-log-status.is-error {
+  background: oklch(0.577 0.245 27.325 / 10%);
+  color: oklch(0.577 0.245 27.325);
+}
+
+.dava-tracking-card {
+  background: var(--dava-card);
+  border: 1px solid var(--dava-border);
+  border-radius: calc(var(--dava-radius) * 1.8); /* shadcn --radius-2xl */
+  padding: 24px;
+  margin-bottom: 20px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.dava-tracking-card h2 {
+  margin: 0 0 20px;
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--dava-muted-foreground);
+}
+
+.dava-tracking-field {
+  margin-bottom: 20px;
+}
+
+.dava-tracking-field:last-child {
+  margin-bottom: 0;
+}
+
+.dava-tracking-field > label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 6px;
+  color: var(--dava-foreground);
+}
+
+.dava-tracking-field input[type='text'],
+.dava-tracking-field input[type='password'],
+.dava-tracking-field input[type='url'] {
+  width: 100%;
+  max-width: 420px;
+  border: 1px solid var(--dava-border);
+  border-radius: calc(var(--dava-radius) * 0.8); /* shadcn --radius-md */
+  padding: 7px 11px;
+  font-size: 14px;
+  color: var(--dava-foreground);
+  background: var(--dava-background);
+  box-shadow: none;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.dava-tracking-field input[type='text']:focus,
+.dava-tracking-field input[type='password']:focus,
+.dava-tracking-field input[type='url']:focus {
+  border-color: var(--dava-ring);
+  box-shadow: 0 0 0 3px color-mix(in oklch, var(--dava-ring) 30%, transparent);
+  outline: none;
+}
+
+.dava-tracking-field .description {
+  margin: 6px 0 0;
+  color: var(--dava-muted-foreground);
+  font-size: 13px;
+}
+
+.dava-tracking-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  color: var(--dava-foreground);
+}
+
+.dava-tracking-toggle input[type='checkbox'] {
+  accent-color: var(--dava-primary);
+}
+
+/* Restyle WP core's submit button as a shadcn-style primary button
+ * (near-black, small radius) instead of WP admin's default blue. */
+.dava-tracking-wrap .button-primary {
+  background: var(--dava-primary);
+  border-color: var(--dava-primary);
+  color: var(--dava-primary-foreground);
+  border-radius: calc(var(--dava-radius) * 0.8);
+  box-shadow: none;
+  text-shadow: none;
+  padding: 4px 16px;
+  height: auto;
+}
+
+.dava-tracking-wrap .button-primary:hover,
+.dava-tracking-wrap .button-primary:focus {
+  background: color-mix(in oklch, var(--dava-primary) 85%, white);
+  border-color: color-mix(in oklch, var(--dava-primary) 85%, white);
+  color: var(--dava-primary-foreground);
+}
