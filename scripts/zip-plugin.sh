@@ -36,7 +36,7 @@ trap 'rm -rf "$STAGE_DIR"' EXIT
 mkdir -p "$STAGE_DIR/$PLUGIN_SLUG"
 rsync -a \
   --exclude='.git' --exclude='.github' --exclude='.gitignore' \
-  --exclude='build' --exclude='scripts' \
+  --exclude='build' --exclude='scripts' --exclude='/README.md' \
   --exclude='node_modules' --exclude='.DS_Store' \
   "$REPO_ROOT/" "$STAGE_DIR/$PLUGIN_SLUG/"
 
