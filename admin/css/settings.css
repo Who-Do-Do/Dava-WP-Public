@@ -197,6 +197,15 @@
   white-space: nowrap;
 }
 
+/* The sidebar is narrow and the verified line is long ("Wordpress — live environment — verified 1 minute
+   ago"): let it wrap inside the card instead of running past the edge. */
+.dava-tracking-sidebar .dava-tracking-badge {
+  max-width: 100%;
+  white-space: normal;
+  border-radius: 16px;
+  line-height: 1.4;
+}
+
 .dava-tracking-badge.is-connected {
   background: var(--dava-accent-bg);
   color: color-mix(in oklch, var(--dava-accent) 70%, black);
