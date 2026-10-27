@@ -4,7 +4,7 @@ Tags: analytics, tracking, conversion tracking, woocommerce, contact form 7
 Requires at least: 6.0
 Tested up to: 6.7
 Requires PHP: 8.0
-Stable tag: 1.0.0
+Stable tag: 1.1.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -29,8 +29,8 @@ Each integration is detected automatically — nothing to configure per-plugin. 
 
 **Built-in diagnostics**
 
-* Test Connection — calls a dedicated connectivity-check endpoint (no event or session created) so you know immediately whether the Site ID, API key, and API base URL actually work together.
-* Recent activity log — the last 20 send attempts (success and failure, with the real error message), so you never have to guess why an event didn't show up in Dáva.
+* Test connection (Connect tab) — calls a dedicated connectivity-check endpoint (no event or session created) so you know immediately whether the Site ID, API key, and API base URL actually work together.
+* Recent activity log (Activity tab) — the last 20 send attempts (success and failure, with the real error message), so you never have to guess why an event didn't show up in Dáva.
 
 == Installation ==
 
@@ -38,8 +38,8 @@ Each integration is detected automatically — nothing to configure per-plugin. 
 2. Activate the plugin through the **Plugins** menu.
 3. Go to **Settings → Dáva Tracking**.
 4. Enter your **Site ID** (Dáva dashboard → Settings → Workspace → Settings & Integrations) and **API key** (Dáva dashboard → API Keys).
-5. Check **Inject the Dáva browser listener on every page**, then click **Save Changes**.
-6. Go to the **Diagnostics** tab and click **Send test event** to confirm the connection works — this only checks connectivity, it does not create an event or session.
+5. Turn on **Load the browser listener on every page**, then click **Save changes**.
+6. On the same **Connect** tab click **Test connection** to confirm the connection works — this only checks connectivity, it does not create an event or session.
 
 That's it — no code editing required. If your site uses Contact Form 7, WPForms, Gravity Forms, Elementor Pro Forms, or WooCommerce, confirmed conversion events start sending automatically once tracking is enabled.
 
@@ -59,7 +59,7 @@ Yes. The plugin passes the browser session ID to the Block Checkout through WooC
 
 = I use a cookie consent banner. Will this plugin track visitors before they consent? =
 
-Only if you leave the consent setting off. Enable **Require cookie consent before tracking** on the Connection tab, and your consent banner must set a `dava-consent` cookie to `"true"` and call `window.dava.checkConsent()` when the visitor accepts. Dáva does not integrate with any specific consent management platform automatically.
+Only if you leave the consent setting off. Enable **Require cookie consent before tracking** on the Connect tab, and your consent banner must set a `dava-consent` cookie to `"true"` and call `window.dava.checkConsent()` when the visitor accepts. Dáva does not integrate with any specific consent management platform automatically.
 
 = My form plugin isn't listed — will it still work? =
 
@@ -74,6 +74,14 @@ No. Test Connection calls a dedicated verify-only endpoint (`GET /v1/verify`) th
 Yes. Go to **Plugins**, find Dáva Tracking, and click **Enable auto-updates** — this is a standard WordPress feature and works the same way as it does for any wordpress.org plugin. It's off by default; turn it on if you don't want to click Update by hand.
 
 == Changelog ==
+
+= 1.1.0 =
+* Add: the WooCommerce conversion event now carries the order's products (name, SKU, quantity, total), coupon codes, discount, tax and shipping totals, payment method and billing country, plus the order-received page URL (without the order key). No customer name, address or phone is sent.
+* Change: the settings page is redesigned with three tabs, Connect, Integrations and Activity. The connection status sits in the header, the connection test sits next to the credentials, and the form options only show when a supported form plugin is installed. Geist is bundled with the plugin (SIL Open Font License), so the page makes no request to a font service.
+* Change: **Send test event** is now **Test connection** and sits next to the credentials on the Connect tab. It calls a connectivity check and creates no event, so the old name was misleading. It tests the saved settings, so it is disabled while the form has unsaved changes.
+* Change: the Preview of **Resend past orders** now says why orders would be skipped (total of 0, no billing email, no consent, already sent).
+* Change: the Activity tab shows a next step under the two failures a site owner can fix (a domain not registered in Dáva, an invalid or revoked API key).
+* Upgrade note: the old tab links `tab=connection`, `tab=advanced` and `tab=diagnostics` still open the right tab. Settings are unchanged.
 
 = 1.0.0 =
 * First public release, published from the Dava-WP-Public repository. Updates are delivered from this repository's GitHub Releases.
