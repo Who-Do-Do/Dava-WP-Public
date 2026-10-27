@@ -3,7 +3,7 @@
  * Plugin Name: Dáva Tracking
  * Plugin URI: https://davazmysel.com
  * Description: Installs the Dáva browser listener and sends confirmed server-side events (WooCommerce, forms, ...) to Dáva, joined to the visitor's browser session via dava_session_id.
- * Version: 1.1.0
+ * Version: 1.1.1
  * Requires at least: 6.0
  * Requires PHP: 8.0
  * WC requires at least: 9.9
@@ -17,7 +17,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('DAVA_TRACKING_VERSION', '1.1.0');
+define('DAVA_TRACKING_VERSION', '1.1.1');
 define('DAVA_TRACKING_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('DAVA_TRACKING_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('DAVA_TRACKING_UPDATE_REPO', 'https://github.com/Who-Do-Do/Dava-WP-Public/');

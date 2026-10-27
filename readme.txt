@@ -4,7 +4,7 @@ Tags: analytics, tracking, conversion tracking, woocommerce, contact form 7
 Requires at least: 6.0
 Tested up to: 6.7
 Requires PHP: 8.0
-Stable tag: 1.1.0
+Stable tag: 1.1.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -74,6 +74,12 @@ No. Test Connection calls a dedicated verify-only endpoint (`GET /v1/verify`) th
 Yes. Go to **Plugins**, find Dáva Tracking, and click **Enable auto-updates** — this is a standard WordPress feature and works the same way as it does for any wordpress.org plugin. It's off by default; turn it on if you don't want to click Update by hand.
 
 == Changelog ==
+
+= 1.1.1 =
+* Fix: the active tab no longer shows stray blue lines at its edges after a click.
+* Change: **Advanced** is its own tab again instead of a collapsing card, so the tabs are Connect, Integrations, Advanced and Activity. Settings are unchanged.
+* Change: the Retry queue on the Activity tab lists the events waiting to be resent (event, order number, attempt), and Recent activity has a **Refresh** button that updates the page in place.
+* Change: the Open Dáva dashboard button lines up with the top of the header, and corners are 2px tighter.
 
 = 1.1.0 =
 * Add: the WooCommerce conversion event now carries the order's products (name, SKU, quantity, total), coupon codes, discount, tax and shipping totals, payment method and billing country, plus the order-received page URL (without the order key). No customer name, address or phone is sent.
