@@ -405,7 +405,7 @@ class Dava_Tracking_WooCommerce {
      * and the backfill preview (which must answer this without acquiring the
      * lock or touching the network).
      *
-     * @return string One of: sent (eligible), already_sent, no_consent, no_email.
+     * @return string One of: sent (eligible), already_sent, no_consent, no_email, no_value.
      */
     private function classify_order($order) {
         if ($order->get_meta(self::SENT_META_KEY)) {
@@ -421,6 +421,11 @@ class Dava_Tracking_WooCommerce {
             return 'no_email';
         }
 
+        // A free order (100% coupon, free sample) is not a sale: no money moved, so it is not sent.
+        if ((float) $order->get_total() <= 0) {
+            return 'no_value';
+        }
+
         return 'sent';
     }
 
@@ -431,7 +436,7 @@ class Dava_Tracking_WooCommerce {
      * can report a real breakdown (not just a total) of why orders were or
      * weren't sent.
      *
-     * @return string One of: sent, already_sent, no_consent, no_email, failed, locked.
+     * @return string One of: sent, already_sent, no_consent, no_email, no_value, failed, locked.
      */
     private function send_conversion_event_for_order($order, $order_id, $to_status) {
         $lock_key = 'dava_tracking_lock_order_' . $order_id;
@@ -507,8 +512,8 @@ class Dava_Tracking_WooCommerce {
         ]);
 
         $counts = $dry_run
-            ? ['would_send' => 0, 'already_sent' => 0, 'no_consent' => 0, 'no_email' => 0]
-            : ['sent' => 0, 'already_sent' => 0, 'no_consent' => 0, 'no_email' => 0, 'failed' => 0, 'locked' => 0];
+            ? ['would_send' => 0, 'already_sent' => 0, 'no_consent' => 0, 'no_email' => 0, 'no_value' => 0]
+            : ['sent' => 0, 'already_sent' => 0, 'no_consent' => 0, 'no_email' => 0, 'no_value' => 0, 'failed' => 0, 'locked' => 0];
 
         foreach ($orders as $order) {
             if ($dry_run) {
