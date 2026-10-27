@@ -20,10 +20,10 @@ Installs the [Dáva](https://davazmysel.com) browser listener on your WordPress 
 1. Download [`dava-tracking.zip`](https://github.com/Who-Do-Do/Dava-WP-Public/releases/latest/download/dava-tracking.zip).
 2. In WordPress admin go to **Plugins, Add New, Upload Plugin**, choose the zip and activate it.
 3. Go to **Settings, Dáva Tracking** and enter your **Site ID** and **API key** from the Dáva dashboard.
-4. Tick **Inject the Dáva browser listener on every page** and save.
-5. Open the **Diagnostics** tab and click **Send test event**. This only checks the connection. It creates no event and no session.
+4. Turn on **Load the browser listener on every page** and save.
+5. On the same **Connect** tab click **Test connection**. This only checks the connection. It creates no event and no session.
 
-If you use a cookie banner, enable **Require cookie consent before tracking** on the Connection tab. See `readme.txt` for the details.
+If you use a cookie banner, enable **Require cookie consent before tracking** on the Connect tab. See `readme.txt` for the details.
 
 ## Updates
 

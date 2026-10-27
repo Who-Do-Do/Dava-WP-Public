@@ -2,7 +2,7 @@
 /**
  * Adds a "Dáva Tracking" test to Tools > Site Health > Status, so a site
  * admin (or hosting support agent) can see connection state there without
- * knowing to check the plugin's own Diagnostics tab first.
+ * knowing to check the plugin's own settings page first.
  *
  * Reads only stored state (options + the most recent activity log entry) —
  * deliberately doesn't call the live API here, since Site Health tests run

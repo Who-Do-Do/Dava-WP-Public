@@ -52,7 +52,7 @@ class Dava_Tracking_Test_Connection {
         wp_safe_redirect(add_query_arg(
             [
                 'page' => 'dava-tracking',
-                'tab' => 'diagnostics',
+                'tab' => 'connect',
                 'dava_test' => is_wp_error($result) ? 'error' : 'success',
             ],
             admin_url('options-general.php')
@@ -83,6 +83,9 @@ class Dava_Tracking_Test_Connection {
         wp_send_json_success([
             'message' => __('Connection successful.', 'dava-tracking'),
             'entry' => $entry,
+            // What the header badge shows, so settings.js can refresh it
+            // without a page reload.
+            'status' => Dava_Tracking_Event_Sender::get_connection_status(),
         ]);
     }
 }

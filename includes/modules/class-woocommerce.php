@@ -45,6 +45,10 @@ class Dava_Tracking_WooCommerce {
     const SENT_META_KEY = '_dava_event_sent';
     const CONSENT_META_KEY = '_dava_consent';
 
+    // Line items sent per order. Keeps the /v1/events body small for an order
+    // with a very long cart; `items_truncated` tells the dashboard it was cut.
+    const EVENT_MAX_ITEMS = 25;
+
     // Store API extension data (Block Checkout). The namespace and the one
     // property name are also hard-coded in public/js/checkout-block.js.
     const BLOCK_NAMESPACE = 'dava-tracking';
@@ -459,11 +463,17 @@ class Dava_Tracking_WooCommerce {
                 'hashed_email' => 'sha256:' . hash('sha256', strtolower(trim($email))),
                 'value' => (float) $order->get_total(),
                 'currency' => $order->get_currency(),
-                'properties' => [
-                    'order_id' => $order_id,
-                    'status' => $to_status,
-                ],
+                'properties' => $this->build_order_properties($order, $order_id, $to_status),
             ];
+
+            $order_url = $this->order_received_url($order_id);
+            if ($order_url !== '') {
+                $event['full_url'] = $order_url;
+                $order_path = wp_parse_url($order_url, PHP_URL_PATH);
+                if (is_string($order_path) && $order_path !== '') {
+                    $event['url_path'] = $order_path;
+                }
+            }
 
             // Re-validated here as well: an order stored by an earlier plugin
             // version may hold a value /v1/events would reject.
@@ -484,6 +494,80 @@ class Dava_Tracking_WooCommerce {
         } finally {
             delete_option($lock_key);
         }
+    }
+
+    /**
+     * The order-received page of this order, WITHOUT the order key.
+     * WC_Order::get_checkout_order_received_url() appends `key=wc_order_...`,
+     * which is the credential that opens the order page for a guest, so it
+     * must not be copied into an analytics event.
+     */
+    private function order_received_url($order_id) {
+        if (!function_exists('wc_get_endpoint_url') || !function_exists('wc_get_checkout_url')) {
+            return '';
+        }
+
+        return esc_url_raw(wc_get_endpoint_url('order-received', $order_id, wc_get_checkout_url()));
+    }
+
+    /**
+     * What the dashboard shows under "Properties" for a sale. Order facts
+     * only: no customer name, address or phone. The email goes as a hash in
+     * the event's own hashed_email field, never here.
+     */
+    private function build_order_properties($order, $order_id, $to_status) {
+        $properties = [
+            'order_id' => $order_id,
+            'status' => $to_status,
+            'item_count' => (int) $order->get_item_count(),
+            'items' => $this->build_order_items($order),
+            'discount_total' => (float) $order->get_discount_total(),
+            'tax_total' => (float) $order->get_total_tax(),
+            'shipping_total' => (float) $order->get_shipping_total(),
+            'payment_method' => (string) $order->get_payment_method(),
+            'payment_method_title' => (string) $order->get_payment_method_title(),
+            'billing_country' => (string) $order->get_billing_country(),
+        ];
+
+        $coupon_codes = array_values(array_map('strval', $order->get_coupon_codes()));
+        if (!empty($coupon_codes)) {
+            $properties['coupon_codes'] = $coupon_codes;
+        }
+
+        if (count($order->get_items()) > self::EVENT_MAX_ITEMS) {
+            $properties['items_truncated'] = true;
+        }
+
+        // An unset method or country is dropped instead of sent as "".
+        return array_filter($properties, static function ($value) {
+            return $value !== '';
+        });
+    }
+
+    private function build_order_items($order) {
+        $items = [];
+        foreach ($order->get_items() as $item) {
+            if (count($items) >= self::EVENT_MAX_ITEMS) {
+                break;
+            }
+
+            $row = [
+                'product_id' => (int) $item->get_product_id(),
+                'name' => mb_substr((string) $item->get_name(), 0, 200),
+                'quantity' => (int) $item->get_quantity(),
+                'total' => (float) $item->get_total(),
+            ];
+
+            $product = $item->get_product();
+            $sku = $product ? (string) $product->get_sku() : '';
+            if ($sku !== '') {
+                $row['sku'] = $sku;
+            }
+
+            $items[] = $row;
+        }
+
+        return $items;
     }
 
     /**
@@ -536,15 +620,15 @@ class Dava_Tracking_WooCommerce {
 
         $dry_run = !empty($_POST['dry_run']);
         $counts = $this->backfill_orders(self::BACKFILL_DAYS, self::BACKFILL_LIMIT, $dry_run);
-        $sent_count = $dry_run ? $counts['would_send'] : $counts['sent'];
 
+        // The whole breakdown goes back, keyed by classification, so the
+        // Integrations tab can say which orders were skipped and why.
         wp_safe_redirect(add_query_arg(
             [
                 'page' => 'dava-tracking',
-                'tab' => 'diagnostics',
+                'tab' => 'integrations',
                 'dava_backfill_mode' => $dry_run ? 'preview' : 'sent',
-                'dava_backfill_sent' => $sent_count,
-                'dava_backfill_skipped' => array_sum($counts) - $sent_count,
+                'dava_backfill_counts' => $counts,
             ],
             admin_url('options-general.php')
         ));

@@ -1,401 +1,830 @@
 /*
- * Tokens copied 1:1 from Dáva's own dashboard theme (apps/web/src/index.css)
- * so this WordPress settings screen reads as the same product, not a
- * separately-designed admin page. Scoped under .dava-tracking-wrap only —
- * never touches the rest of wp-admin.
+ * Settings screen (Settings > Dáva Tracking). Tokens match the dashboard
+ * (apps/web, docs design mock tracking-redesign.css) so this reads as the
+ * same product. Scoped under .dava-tracking-wrap: nothing here touches the
+ * rest of wp-admin.
+ *
+ * Geist is bundled in admin/fonts (SIL OFL 1.1, license kept next to the
+ * files) instead of loaded from Google Fonts, so the admin page makes no
+ * request to a third party.
  */
+@font-face {
+  font-family: 'Geist';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 900;
+  src: url('../fonts/geist-latin-ext-wght-normal.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF,
+    U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+  font-family: 'Geist';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 900;
+  src: url('../fonts/geist-latin-wght-normal.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
+    U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
 .dava-tracking-wrap {
-  --dava-background: oklch(1 0 0);
-  --dava-foreground: oklch(0.145 0 0);
-  --dava-card: oklch(1 0 0);
-  --dava-primary: oklch(0.2 0 0);
-  --dava-primary-foreground: oklch(0.97 0.014 254.604);
-  --dava-muted: oklch(0.97 0 0);
-  --dava-muted-foreground: oklch(0.556 0 0);
-  --dava-border: oklch(0.922 0 0);
-  --dava-ring: oklch(0.708 0 0);
-  --dava-accent: oklch(0.696 0.17 162.48); /* brand teal, chart-2 */
-  --dava-accent-bg: oklch(0.696 0.17 162.48 / 12%);
-  --dava-radius: 0.45rem;
+  --dava-bg: #f6f7f9;
+  --dava-surface: #fff;
+  --dava-sunken: #f8fafc;
+  --dava-ink: #0f172a;
+  --dava-body: #334155;
+  --dava-muted: #5b6b80;
+  --dava-line: #e2e8f0;
+  --dava-field: #8b98ab;
+  --dava-hover: #f1f5f9;
+  --dava-brand: #0f766e;
+  --dava-brand-tint: #e3f5f2;
+  --dava-ok: #067647;
+  --dava-ok-bg: #dcfae6;
+  --dava-warn: #93370d;
+  --dava-warn-bg: #fef0c7;
+  --dava-err: #b91c1c;
+  --dava-err-bg: #fee2e2;
+  --dava-ring: #2563eb;
+  --dava-radius: 10px;
 
-  max-width: none;
-  margin-right: 20px;
-  font-family:
-    ui-sans-serif,
-    system-ui,
-    -apple-system,
-    'Segoe UI',
-    Helvetica,
-    Arial,
-    sans-serif;
-  color: var(--dava-foreground);
-}
-
-.dava-tracking-tabs.nav-tab-wrapper {
-  display: flex;
-  gap: 4px;
-  background: white;
-  border: none;
-  border-radius: calc(var(--dava-radius) * 0.8);
-  padding: 4px !important;
-  margin-bottom: 12px !important;
-  width: 100%;
-}
-
-.dava-tracking-tabs .nav-tab {
-  margin: 0;
-  padding: 6px 16px;
-  border: none;
-  border-radius: calc(var(--dava-radius) * 0.6);
-  background: transparent;
+  box-sizing: border-box;
+  max-width: 1000px;
+  margin: 24px auto 0;
+  padding: 0 20px 48px;
+  font-family: 'Geist', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif;
   font-size: 14px;
-  outline: none;
-  font-weight: 500;
-  color: var(--dava-muted-foreground);
-  transition:
-    background-color 0.15s ease,
-    color 0.15s ease,
-    box-shadow 0.15s ease;
-  outline: none;
+  line-height: 1.5;
+  color: var(--dava-body);
 }
 
-.dava-tracking-tabs .nav-tab:hover,
-.dava-tracking-tabs .nav-tab:focus {
-  background: var(--dava-foreground);
-  color: white;
+.dava-tracking-wrap *,
+.dava-tracking-wrap *::before,
+.dava-tracking-wrap *::after {
+  box-sizing: border-box;
 }
 
-.dava-tracking-tabs .nav-tab-active,
-.dava-tracking-tabs .nav-tab-active:hover {
-  background: var(--dava-foreground);
-  color: white;
-  outline: none;
+.dava-tracking-wrap [hidden] {
+  display: none !important;
 }
 
-.dava-tracking-tab-panel {
-  display: none;
+.dava-tracking-wrap :focus-visible {
+  outline: 2px solid var(--dava-ring);
+  outline-offset: 2px;
+  box-shadow: none;
 }
 
-.dava-tracking-tab-panel.is-active {
-  display: block;
+.dava-tracking-wrap code {
+  font-size: 12.5px;
+  padding: 1px 5px;
+  background: var(--dava-hover);
+  border: 1px solid var(--dava-line);
+  border-radius: 5px;
+  color: var(--dava-ink);
 }
 
+/* Header */
 .dava-tracking-header {
   display: flex;
-  flex-direction: column;
+  flex-wrap: wrap;
+  gap: 16px;
   align-items: center;
-  text-align: center;
-  gap: 10px;
-  padding: 40px 0 32px;
+  justify-content: space-between;
+  margin-bottom: 20px;
 }
 
-.dava-tracking-brand {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 10px;
+.dava-tracking-wrap h1.dava-tracking-brand {
+  margin: 0;
+  padding: 0;
+  line-height: 0;
 }
 
 .dava-tracking-logo {
+  display: block;
   height: 34px;
   width: auto;
 }
 
 .dava-tracking-subtitle {
-  margin: 0;
-  color: var(--dava-muted-foreground);
-}
-
-.dava-tracking-body {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 360px;
-  gap: 24px;
-  align-items: start;
-}
-
-.dava-tracking-main {
-  min-width: 0;
-}
-
-.dava-tracking-sidebar {
-  position: sticky;
-  top: 32px;
-}
-
-.dava-tracking-sidebar .dava-tracking-card h2 {
-  margin-bottom: 8px;
-}
-
-.dava-tracking-sidebar .description {
-  margin: 0 0 16px;
-}
-
-.dava-tracking-plugin-list {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.dava-tracking-plugin-list li {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 0;
-  border-top: 1px solid var(--dava-border);
+  margin: 8px 0 0;
   font-size: 13px;
+  line-height: 1.4;
+  color: var(--dava-muted);
 }
 
-.dava-tracking-plugin-list li:first-child {
-  border-top: none;
+.dava-tracking-header-right {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
 }
 
-.dava-tracking-plugin-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  flex-shrink: 0;
+.dava-tracking-status {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
 }
 
-.dava-tracking-plugin-dot.is-detected {
-  background: var(--dava-accent);
-}
-
-.dava-tracking-plugin-dot.is-missing {
-  background: var(--dava-border);
-}
-
-.dava-tracking-plugin-list li span:nth-child(2) {
-  flex: 1;
-  font-weight: 500;
-  color: var(--dava-foreground);
-}
-
-.dava-tracking-plugin-status {
-  color: var(--dava-muted-foreground);
+.dava-tracking-status-line {
   font-size: 12px;
+  color: var(--dava-muted);
 }
 
-@media (max-width: 960px) {
-  .dava-tracking-body {
-    grid-template-columns: 1fr;
-  }
-
-  .dava-tracking-sidebar {
-    position: static;
+@media (max-width: 600px) {
+  .dava-tracking-status {
+    align-items: flex-start;
   }
 }
 
-.dava-tracking-badge {
+.dava-tracking-chip {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  flex-shrink: 0;
-  padding: 5px 12px;
+  padding: 2px 10px;
   border-radius: 999px;
-  font-size: 12px;
+  background: var(--dava-hover);
+  color: var(--dava-muted);
+  font-size: 12.5px;
   font-weight: 600;
+  line-height: 1.5;
   white-space: nowrap;
 }
 
-/* The sidebar is narrow and the verified line is long ("Wordpress — live environment — verified 1 minute
-   ago"): let it wrap inside the card instead of running past the edge. */
-.dava-tracking-sidebar .dava-tracking-badge {
-  max-width: 100%;
-  white-space: normal;
-  border-radius: 16px;
-  line-height: 1.4;
-}
-
-.dava-tracking-badge.is-connected {
-  background: var(--dava-accent-bg);
-  color: color-mix(in oklch, var(--dava-accent) 70%, black);
-}
-
-.dava-tracking-badge.is-disconnected {
-  background: var(--dava-muted);
-  color: var(--dava-muted-foreground);
-}
-
-.dava-tracking-badge.is-warning {
-  background: oklch(0.769 0.188 70.08 / 15%);
-  color: color-mix(in oklch, oklch(0.769 0.188 70.08) 60%, black);
-}
-
-.dava-tracking-dot {
+.dava-tracking-chip::before {
+  content: '';
   width: 7px;
   height: 7px;
   border-radius: 50%;
   background: currentColor;
 }
 
-.dava-tracking-banner {
-  padding: 12px 16px;
-  border-radius: calc(var(--dava-radius) * 0.8);
-  margin-bottom: 20px;
-  font-size: 14px;
+.dava-tracking-chip.is-ok {
+  background: var(--dava-ok-bg);
+  color: var(--dava-ok);
 }
 
-.dava-tracking-banner.is-success {
-  background: var(--dava-accent-bg);
-  color: color-mix(in oklch, var(--dava-accent) 70%, black);
+.dava-tracking-chip.is-warn {
+  background: var(--dava-warn-bg);
+  color: var(--dava-warn);
 }
 
-.dava-tracking-banner.is-error {
-  background: oklch(0.577 0.245 27.325 / 10%);
-  color: oklch(0.577 0.245 27.325);
+.dava-tracking-chip.is-err {
+  background: var(--dava-err-bg);
+  color: var(--dava-err);
 }
 
-.dava-tracking-card-header {
+/* WordPress moves admin notices after .wp-header-end, so they land between
+   the header and the tabs instead of inside the header row. */
+.dava-tracking-wrap .wp-header-end {
+  display: none;
+}
+
+.dava-tracking-wrap .notice {
+  margin: 0 0 16px;
+}
+
+/* Buttons */
+.dava-tracking-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 0;
+  padding: 7px 14px;
+  border: 1px solid var(--dava-field);
+  border-radius: 8px;
+  background: var(--dava-surface);
+  color: var(--dava-ink);
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+  line-height: 1.3;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.dava-tracking-btn:hover {
+  background: var(--dava-hover);
+  color: var(--dava-ink);
+}
+
+.dava-tracking-btn.is-primary {
+  background: var(--dava-ink);
+  border-color: var(--dava-ink);
+  color: #fff;
+}
+
+.dava-tracking-btn.is-primary:hover {
+  background: #1e293b;
+  color: #fff;
+}
+
+.dava-tracking-btn.is-small {
+  padding: 5px 10px;
+  font-size: 13px;
+}
+
+.dava-tracking-btn[disabled] {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Tabs */
+.dava-tracking-tabs {
   display: flex;
+  gap: 4px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid var(--dava-line);
+  overflow-x: auto;
+}
+
+.dava-tracking-tab {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: -1px;
+  padding: 10px 14px;
+  border-bottom: 2px solid transparent;
+  color: var(--dava-muted);
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.dava-tracking-tab:hover {
+  color: var(--dava-ink);
+}
+
+.dava-tracking-tab.is-active {
+  border-bottom-color: var(--dava-brand);
+  color: var(--dava-ink);
+}
+
+.dava-tracking-count {
+  display: inline-grid;
+  place-items: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: var(--dava-err-bg);
+  color: var(--dava-err);
+  font-size: 11.5px;
+  font-weight: 700;
+}
+
+.dava-tracking-panel {
+  display: none;
+}
+
+.dava-tracking-panel.is-active {
+  display: block;
+}
+
+/* Cards */
+.dava-tracking-card {
+  margin: 0 0 16px;
+  background: var(--dava-surface);
+  border: 1px solid var(--dava-line);
+  border-radius: var(--dava-radius);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+.dava-tracking-card-head {
+  padding: 16px 20px 0;
+}
+
+.dava-tracking-card-head.is-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 16px;
   align-items: center;
   justify-content: space-between;
+  padding-bottom: 16px;
+}
+
+.dava-tracking-wrap .dava-tracking-card-title {
+  display: block;
+  margin: 0;
+  padding: 0;
+  font-size: 15px;
+  line-height: 1.3;
+  color: var(--dava-ink);
+}
+
+.dava-tracking-card-desc,
+.dava-tracking-help {
+  margin: 4px 0 0;
+  max-width: 68ch;
+  font-size: 13px;
+  color: var(--dava-muted);
+}
+
+details.dava-tracking-card > summary .dava-tracking-card-desc {
+  display: block;
+}
+
+.dava-tracking-help {
+  margin-top: 6px;
+  font-size: 12.5px;
+}
+
+.dava-tracking-card-body {
+  padding: 16px 20px 20px;
+}
+
+.dava-tracking-card-foot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+  align-items: center;
+  padding: 12px 20px;
+  background: var(--dava-sunken);
+  border-top: 1px solid var(--dava-line);
+  border-radius: 0 0 var(--dava-radius) var(--dava-radius);
+}
+
+/* Advanced is a card that collapses */
+details.dava-tracking-card > summary {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  list-style: none;
+  cursor: pointer;
+}
+
+details.dava-tracking-card > summary::-webkit-details-marker {
+  display: none;
+}
+
+details.dava-tracking-card > summary::after {
+  content: '';
+  flex: none;
+  width: 8px;
+  height: 8px;
+  margin-right: 4px;
+  border-right: 2px solid var(--dava-muted);
+  border-bottom: 2px solid var(--dava-muted);
+  transform: rotate(45deg);
+  transition: transform 0.15s;
+}
+
+details.dava-tracking-card[open] > summary {
+  border-bottom: 1px solid var(--dava-line);
+}
+
+details.dava-tracking-card[open] > summary::after {
+  transform: rotate(-135deg);
+}
+
+/* Fields */
+.dava-tracking-grid {
+  display: grid;
+  gap: 16px 20px;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 760px) {
+  .dava-tracking-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .dava-tracking-grid .is-full {
+    grid-column: 1 / -1;
+  }
+}
+
+.dava-tracking-field label {
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 600;
+  color: var(--dava-ink);
+}
+
+.dava-tracking-wrap .dava-tracking-field input[type='text'],
+.dava-tracking-wrap .dava-tracking-field input[type='url'],
+.dava-tracking-wrap .dava-tracking-field input[type='password'] {
+  width: 100%;
+  max-width: none;
+  min-height: 0;
+  padding: 8px 10px;
+  border: 1px solid var(--dava-field);
+  border-radius: 8px;
+  background: var(--dava-surface);
+  color: var(--dava-ink);
+  font: inherit;
+  box-shadow: none;
+}
+
+.dava-tracking-wrap .dava-tracking-field input.is-mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 13px;
+}
+
+/* Switch rows */
+.dava-tracking-switch-row {
+  display: flex;
   gap: 16px;
-  margin-bottom: 8px;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 14px 0;
 }
 
-.dava-tracking-card-header h2 {
-  margin: 0;
+.dava-tracking-switch-row:first-child {
+  padding-top: 0;
 }
 
-.dava-tracking-card-header form {
+.dava-tracking-switch-row:last-child {
+  padding-bottom: 0;
+}
+
+.dava-tracking-switch-row + .dava-tracking-switch-row {
+  border-top: 1px solid var(--dava-line);
+}
+
+.dava-tracking-switch-title {
+  font-weight: 600;
+  color: var(--dava-ink);
+}
+
+.dava-tracking-switch-desc {
+  margin: 2px 0 0;
+  max-width: 62ch;
+  font-size: 13px;
+  color: var(--dava-muted);
+}
+
+.dava-tracking-switch {
+  position: relative;
+  flex: none;
+  width: 38px;
+  height: 22px;
+  margin-top: 1px;
+}
+
+.dava-tracking-wrap .dava-tracking-switch input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
   margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.dava-tracking-switch span {
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  background: var(--dava-field);
+  transition: background 0.15s;
+  pointer-events: none;
+}
+
+.dava-tracking-switch span::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  transition: transform 0.15s;
+}
+
+.dava-tracking-switch input:checked + span {
+  background: var(--dava-brand);
+}
+
+.dava-tracking-switch input:checked + span::after {
+  transform: translateX(16px);
+}
+
+.dava-tracking-switch input:focus-visible + span {
+  outline: 2px solid var(--dava-ring);
+  outline-offset: 2px;
+}
+
+details.dava-tracking-more {
+  margin-top: 10px;
+}
+
+details.dava-tracking-more summary {
+  color: var(--dava-brand);
+  font-size: 13px;
+  font-weight: 600;
+  list-style: none;
+  cursor: pointer;
+}
+
+details.dava-tracking-more summary::-webkit-details-marker {
+  display: none;
+}
+
+details.dava-tracking-more p {
+  margin: 8px 0 0;
+  max-width: 68ch;
+  font-size: 13px;
+  color: var(--dava-muted);
+}
+
+/* Test result next to the credentials */
+.dava-tracking-result {
+  font-size: 13px;
+  color: var(--dava-body);
+}
+
+.dava-tracking-result.is-ok {
+  color: var(--dava-ok);
+}
+
+.dava-tracking-result.is-err {
+  color: var(--dava-err);
+}
+
+.dava-tracking-reset {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 16px;
+  padding: 12px 14px;
+  border: 1px solid var(--dava-line);
+  border-radius: 8px;
+  background: var(--dava-sunken);
+}
+
+.dava-tracking-reset strong {
+  color: var(--dava-ink);
+}
+
+.dava-tracking-reset p {
+  margin: 2px 0 0;
+  max-width: 56ch;
+  font-size: 13px;
+  color: var(--dava-muted);
+}
+
+.dava-tracking-divider {
+  margin: 16px 0 0;
+  padding-top: 16px;
+  border-top: 1px solid var(--dava-line);
+}
+
+/* Integrations */
+.dava-tracking-plugin-list {
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--dava-line);
+}
+
+.dava-tracking-plugin-list li {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin: 0;
+  padding: 12px 20px;
+}
+
+.dava-tracking-plugin-list li + li {
+  border-top: 1px solid var(--dava-line);
+}
+
+.dava-tracking-plugin-icon {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  background: var(--dava-hover);
+  color: var(--dava-muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.is-detected .dava-tracking-plugin-icon {
+  background: var(--dava-brand-tint);
+  color: var(--dava-brand);
+}
+
+.dava-tracking-plugin-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.dava-tracking-plugin-name {
+  font-weight: 600;
+  color: var(--dava-ink);
+}
+
+.dava-tracking-plugin-desc {
+  font-size: 13px;
+  color: var(--dava-muted);
+}
+
+.dava-tracking-rules {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.dava-tracking-rules li {
+  position: relative;
+  margin: 0;
+  padding-left: 26px;
+  font-size: 13.5px;
+}
+
+.dava-tracking-rules li::before {
+  content: '';
+  position: absolute;
+  top: 5px;
+  left: 4px;
+  width: 6px;
+  height: 11px;
+  border-right: 2px solid var(--dava-brand);
+  border-bottom: 2px solid var(--dava-brand);
+  transform: rotate(45deg);
+}
+
+.dava-tracking-backfill {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 20px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.dava-tracking-backfill strong {
+  color: var(--dava-ink);
+}
+
+.dava-tracking-backfill p {
+  margin: 2px 0 0;
+  max-width: 60ch;
+  font-size: 13px;
+  color: var(--dava-muted);
+}
+
+.dava-tracking-backfill-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.dava-tracking-preview {
+  margin-top: 14px;
+  padding: 12px 14px;
+  border: 1px solid var(--dava-line);
+  border-radius: 8px;
+  background: var(--dava-sunken);
+  font-size: 13px;
+}
+
+.dava-tracking-preview-title {
+  color: var(--dava-ink);
+  font-weight: 600;
+}
+
+.dava-tracking-preview-nums {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 24px;
+  margin-top: 6px;
+}
+
+.dava-tracking-preview-nums strong {
+  margin-right: 4px;
+  font-size: 16px;
+  color: var(--dava-ink);
+}
+
+/* Activity */
+.dava-tracking-seg {
+  display: inline-flex;
+  gap: 2px;
+  padding: 2px;
+  border-radius: 8px;
+  background: var(--dava-line);
+}
+
+.dava-tracking-seg button {
+  padding: 5px 12px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--dava-muted);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.dava-tracking-seg button[aria-pressed='true'] {
+  background: var(--dava-surface);
+  color: var(--dava-ink);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+.dava-tracking-log-wrap {
+  overflow-x: auto;
 }
 
 .dava-tracking-log {
   width: 100%;
   border-collapse: collapse;
-  font-size: 13px;
+  font-size: 13.5px;
 }
 
 .dava-tracking-log th {
-  text-align: left;
-  padding: 8px 12px 8px 0;
-  color: var(--dava-muted-foreground);
+  padding: 10px 20px;
+  background: var(--dava-sunken);
+  border-bottom: 1px solid var(--dava-line);
+  font-size: 12px;
   font-weight: 600;
-  border-bottom: 1px solid var(--dava-border);
+  letter-spacing: 0.04em;
+  text-align: left;
+  text-transform: uppercase;
+  color: var(--dava-muted);
 }
 
 .dava-tracking-log td {
-  padding: 10px 12px 10px 0;
-  border-bottom: 1px solid var(--dava-border);
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--dava-line);
   vertical-align: top;
 }
 
 .dava-tracking-log tr:last-child td {
-  border-bottom: none;
+  border-bottom: 0;
 }
 
-.dava-tracking-log-status {
-  display: inline-block;
-  padding: 2px 8px;
-  border-radius: 999px;
-  font-size: 12px;
-  font-weight: 600;
+.dava-tracking-log-time {
+  white-space: nowrap;
+  color: var(--dava-muted);
 }
 
-.dava-tracking-log-status.is-success {
-  background: var(--dava-accent-bg);
-  color: color-mix(in oklch, var(--dava-accent) 70%, black);
-}
-
-.dava-tracking-log-status.is-error {
-  background: oklch(0.577 0.245 27.325 / 10%);
-  color: oklch(0.577 0.245 27.325);
-}
-
-.dava-tracking-card {
-  background: var(--dava-card);
-  border: 1px solid var(--dava-border);
-  border-radius: calc(var(--dava-radius) * 1.8); /* shadcn --radius-2xl */
-  padding: 24px;
-  margin-bottom: 20px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
-}
-
-.dava-tracking-card h2 {
-  margin: 0 0 20px;
-  font-size: 13px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--dava-muted-foreground);
-}
-
-.dava-tracking-field {
-  margin-bottom: 20px;
-}
-
-.dava-tracking-field:last-child {
-  margin-bottom: 0;
-}
-
-.dava-tracking-field > label {
+.dava-tracking-log-hint {
   display: block;
-  font-weight: 600;
-  margin-bottom: 6px;
-  color: var(--dava-foreground);
+  margin-top: 4px;
+  font-size: 12.5px;
+  color: var(--dava-muted);
 }
 
-.dava-tracking-field input[type='text'],
-.dava-tracking-field input[type='password'],
-.dava-tracking-field input[type='url'] {
-  width: 100%;
-  max-width: 420px;
-  border: 1px solid var(--dava-border);
-  border-radius: calc(var(--dava-radius) * 0.8); /* shadcn --radius-md */
-  padding: 7px 11px;
-  font-size: 14px;
-  color: var(--dava-foreground);
-  background: var(--dava-background);
-  box-shadow: none;
-  transition:
-    border-color 0.15s ease,
-    box-shadow 0.15s ease;
+.dava-tracking-empty {
+  padding: 28px 20px;
+  text-align: center;
+  color: var(--dava-muted);
 }
 
-.dava-tracking-field input[type='text']:focus,
-.dava-tracking-field input[type='password']:focus,
-.dava-tracking-field input[type='url']:focus {
-  border-color: var(--dava-ring);
-  box-shadow: 0 0 0 3px color-mix(in oklch, var(--dava-ring) 30%, transparent);
-  outline: none;
+.dava-tracking-empty strong {
+  display: block;
+  margin-bottom: 2px;
+  color: var(--dava-ink);
 }
 
-.dava-tracking-field .description {
-  margin: 6px 0 0;
-  color: var(--dava-muted-foreground);
-  font-size: 13px;
-}
-
-.dava-tracking-toggle {
+/* Save bar */
+.dava-tracking-savebar {
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
   display: flex;
+  flex-wrap: wrap;
+  gap: 10px 16px;
   align-items: center;
+  justify-content: space-between;
+  margin-top: 8px;
+  padding: 12px 20px;
+  background: var(--dava-surface);
+  border: 1px solid var(--dava-line);
+  border-radius: var(--dava-radius);
+  box-shadow: 0 -4px 14px rgba(15, 23, 42, 0.06);
+}
+
+.dava-tracking-savebar-msg {
+  display: flex;
   gap: 8px;
-  font-weight: 600;
-  cursor: pointer;
-  color: var(--dava-foreground);
+  align-items: center;
+  font-size: 13px;
+  color: var(--dava-muted);
 }
 
-.dava-tracking-toggle input[type='checkbox'] {
-  accent-color: var(--dava-primary);
+.dava-tracking-savebar.is-dirty .dava-tracking-savebar-msg {
+  color: var(--dava-ink);
 }
 
-/* Restyle WP core's submit button as a shadcn-style primary button
- * (near-black, small radius) instead of WP admin's default blue. */
-.dava-tracking-wrap .button-primary {
-  background: var(--dava-primary);
-  border-color: var(--dava-primary);
-  color: var(--dava-primary-foreground);
-  border-radius: calc(var(--dava-radius) * 0.8);
-  box-shadow: none;
-  text-shadow: none;
-  padding: 4px 16px;
-  height: auto;
-}
-
-.dava-tracking-wrap .button-primary:hover,
-.dava-tracking-wrap .button-primary:focus {
-  background: color-mix(in oklch, var(--dava-primary) 85%, white);
-  border-color: color-mix(in oklch, var(--dava-primary) 85%, white);
-  color: var(--dava-primary-foreground);
+.dava-tracking-savebar.is-dirty .dava-tracking-savebar-msg::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--dava-warn);
 }
