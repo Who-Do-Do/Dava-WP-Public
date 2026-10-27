@@ -47,7 +47,7 @@
   --dava-err: #b91c1c;
   --dava-err-bg: #fee2e2;
   --dava-ring: #2563eb;
-  --dava-radius: 10px;
+  --dava-radius: 8px;
 
   box-sizing: border-box;
   max-width: 1000px;
@@ -80,7 +80,7 @@
   padding: 1px 5px;
   background: var(--dava-hover);
   border: 1px solid var(--dava-line);
-  border-radius: 5px;
+  border-radius: 3px;
   color: var(--dava-ink);
 }
 
@@ -89,7 +89,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: 16px;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   margin-bottom: 20px;
 }
@@ -117,7 +117,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: 12px;
-  align-items: center;
+  align-items: flex-start;
 }
 
 .dava-tracking-status {
@@ -193,7 +193,7 @@
   min-height: 0;
   padding: 7px 14px;
   border: 1px solid var(--dava-field);
-  border-radius: 8px;
+  border-radius: 6px;
   background: var(--dava-surface);
   color: var(--dava-ink);
   font: inherit;
@@ -254,6 +254,20 @@
 
 .dava-tracking-tab:hover {
   color: var(--dava-ink);
+}
+
+/* WP core paints a 1px blue box-shadow on a:focus, and the tab strip's
+   overflow clips the ring top and bottom, leaving two stray vertical
+   lines. The ring is drawn inside the tab instead. */
+.dava-tracking-tab:focus {
+  box-shadow: none;
+  outline: none;
+}
+
+.dava-tracking-tab:focus-visible {
+  outline: 2px solid var(--dava-ring);
+  outline-offset: -2px;
+  border-radius: 4px 4px 0 0;
 }
 
 .dava-tracking-tab.is-active {
@@ -321,10 +335,6 @@
   color: var(--dava-muted);
 }
 
-details.dava-tracking-card > summary .dava-tracking-card-desc {
-  display: block;
-}
-
 .dava-tracking-help {
   margin-top: 6px;
   font-size: 12.5px;
@@ -343,41 +353,6 @@ details.dava-tracking-card > summary .dava-tracking-card-desc {
   background: var(--dava-sunken);
   border-top: 1px solid var(--dava-line);
   border-radius: 0 0 var(--dava-radius) var(--dava-radius);
-}
-
-/* Advanced is a card that collapses */
-details.dava-tracking-card > summary {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-  justify-content: space-between;
-  padding: 16px 20px;
-  list-style: none;
-  cursor: pointer;
-}
-
-details.dava-tracking-card > summary::-webkit-details-marker {
-  display: none;
-}
-
-details.dava-tracking-card > summary::after {
-  content: '';
-  flex: none;
-  width: 8px;
-  height: 8px;
-  margin-right: 4px;
-  border-right: 2px solid var(--dava-muted);
-  border-bottom: 2px solid var(--dava-muted);
-  transform: rotate(45deg);
-  transition: transform 0.15s;
-}
-
-details.dava-tracking-card[open] > summary {
-  border-bottom: 1px solid var(--dava-line);
-}
-
-details.dava-tracking-card[open] > summary::after {
-  transform: rotate(-135deg);
 }
 
 /* Fields */
@@ -412,7 +387,7 @@ details.dava-tracking-card[open] > summary::after {
   min-height: 0;
   padding: 8px 10px;
   border: 1px solid var(--dava-field);
-  border-radius: 8px;
+  border-radius: 6px;
   background: var(--dava-surface);
   color: var(--dava-ink);
   font: inherit;
@@ -555,7 +530,7 @@ details.dava-tracking-more p {
   margin-top: 16px;
   padding: 12px 14px;
   border: 1px solid var(--dava-line);
-  border-radius: 8px;
+  border-radius: 6px;
   background: var(--dava-sunken);
 }
 
@@ -685,7 +660,7 @@ details.dava-tracking-more p {
   margin-top: 14px;
   padding: 12px 14px;
   border: 1px solid var(--dava-line);
-  border-radius: 8px;
+  border-radius: 6px;
   background: var(--dava-sunken);
   font-size: 13px;
 }
@@ -709,18 +684,25 @@ details.dava-tracking-more p {
 }
 
 /* Activity */
+.dava-tracking-head-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
 .dava-tracking-seg {
   display: inline-flex;
   gap: 2px;
   padding: 2px;
-  border-radius: 8px;
+  border-radius: 6px;
   background: var(--dava-line);
 }
 
 .dava-tracking-seg button {
   padding: 5px 12px;
   border: 0;
-  border-radius: 6px;
+  border-radius: 4px;
   background: transparent;
   color: var(--dava-muted);
   font: inherit;

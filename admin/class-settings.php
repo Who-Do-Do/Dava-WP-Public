@@ -56,7 +56,7 @@ class Dava_Tracking_Settings {
         ]);
 
         wp_safe_redirect(add_query_arg(
-            ['page' => self::PAGE_SLUG, 'tab' => 'connect', 'dava_reset' => '1'],
+            ['page' => self::PAGE_SLUG, 'tab' => 'advanced', 'dava_reset' => '1'],
             admin_url('options-general.php')
         ));
         exit;
@@ -300,6 +300,7 @@ class Dava_Tracking_Settings {
             'ajaxUrl' => admin_url('admin-ajax.php'),
             'ajaxAction' => Dava_Tracking_Test_Connection::AJAX_ACTION,
             'sendingLabel' => __('Testing…', 'dava-tracking'),
+            'refreshingLabel' => __('Refreshing…', 'dava-tracking'),
             'justNowLabel' => __('just now', 'dava-tracking'),
             'networkErrorLabel' => __('Could not reach the server. Please try again.', 'dava-tracking'),
             'successLabel' => __('Success', 'dava-tracking'),
@@ -344,17 +345,16 @@ class Dava_Tracking_Settings {
 
     /**
      * Where each tab slug from before the redesign lives now, so a bookmarked
-     * or redirected ?tab=connection|advanced|diagnostics still lands somewhere.
+     * or redirected ?tab=connection|diagnostics still lands somewhere.
      */
     private static function normalize_tab($requested) {
         $legacy = [
             'connection' => 'connect',
-            'advanced' => 'connect',
             'diagnostics' => 'activity',
         ];
         $tab = isset($legacy[$requested]) ? $legacy[$requested] : $requested;
 
-        return in_array($tab, ['connect', 'integrations', 'activity'], true) ? $tab : 'connect';
+        return in_array($tab, ['connect', 'integrations', 'advanced', 'activity'], true) ? $tab : 'connect';
     }
 
     /**
@@ -490,6 +490,7 @@ class Dava_Tracking_Settings {
                 <?php settings_fields('dava_tracking'); ?>
                 <?php $this->render_connect_panel($ctx); ?>
                 <?php $this->render_integrations_panel($ctx); ?>
+                <?php $this->render_advanced_panel($ctx); ?>
                 <?php $this->render_savebar($ctx); ?>
             </form>
 
@@ -560,6 +561,7 @@ class Dava_Tracking_Settings {
         $tabs = [
             'connect' => __('Connect', 'dava-tracking'),
             'integrations' => __('Integrations', 'dava-tracking'),
+            'advanced' => __('Advanced', 'dava-tracking'),
             'activity' => __('Activity', 'dava-tracking'),
         ];
         ?>
@@ -687,7 +689,7 @@ class Dava_Tracking_Settings {
                                 name="<?php echo esc_attr(self::OPTION_KEY); ?>[api_base_url]"
                                 value="<?php echo esc_attr($options['api_base_url']); ?>"
                             />
-                            <p class="dava-tracking-help"><?php echo esc_html__('Where confirmed events are sent. This is not the host the browser listener loads from (see Advanced below).', 'dava-tracking'); ?></p>
+                            <p class="dava-tracking-help"><?php echo esc_html__('Where confirmed events are sent. This is not the host the browser listener loads from (see the Advanced tab).', 'dava-tracking'); ?></p>
                         </div>
                     </div>
                 </div>
@@ -748,22 +750,19 @@ class Dava_Tracking_Settings {
                     </div>
                 </div>
             </div>
-
-            <?php $this->render_advanced_card($ctx); ?>
         </section>
         <?php
     }
 
-    private function render_advanced_card($ctx) {
+    private function render_advanced_panel($ctx) {
         $options = $ctx['options'];
         ?>
-        <details class="dava-tracking-card" id="dava-tracking-advanced" <?php echo $ctx['reset_done'] ? 'open' : ''; ?>>
-            <summary>
-                <span>
-                    <span class="dava-tracking-card-title"><?php echo esc_html__('Advanced', 'dava-tracking'); ?></span>
-                    <span class="dava-tracking-card-desc"><?php echo esc_html__('Listener host, debug logging and reset. Most sites never change these.', 'dava-tracking'); ?></span>
-                </span>
-            </summary>
+        <section id="dava-tracking-panel-advanced" class="dava-tracking-panel<?php echo $ctx['active_tab'] === 'advanced' ? ' is-active' : ''; ?>">
+        <div class="dava-tracking-card" id="dava-tracking-advanced">
+            <div class="dava-tracking-card-head">
+                <h2 class="dava-tracking-card-title"><?php echo esc_html__('Advanced', 'dava-tracking'); ?></h2>
+                <p class="dava-tracking-card-desc"><?php echo esc_html__('Listener host, debug logging and reset. Most sites never change these.', 'dava-tracking'); ?></p>
+            </div>
             <div class="dava-tracking-card-body">
                 <div class="dava-tracking-field">
                     <label for="dava-listener-base-url"><?php echo esc_html__('Browser listener URL', 'dava-tracking'); ?></label>
@@ -804,7 +803,8 @@ class Dava_Tracking_Settings {
                     ><?php echo esc_html__('Reset to defaults', 'dava-tracking'); ?></a>
                 </div>
             </div>
-        </details>
+        </div>
+        </section>
         <?php
     }
 
@@ -996,6 +996,7 @@ class Dava_Tracking_Settings {
         $log = $ctx['activity_log'];
         ?>
         <section id="dava-tracking-panel-activity" class="dava-tracking-panel<?php echo $ctx['active_tab'] === 'activity' ? ' is-active' : ''; ?>">
+            <div id="dava-tracking-activity-data">
             <div class="dava-tracking-card">
                 <div class="dava-tracking-card-head is-row">
                     <div>
@@ -1037,14 +1038,52 @@ class Dava_Tracking_Settings {
                         )); ?>
                     </span>
                 </div>
+                <?php if (!empty($retry_queue)) : ?>
+                    <div class="dava-tracking-log-wrap">
+                        <table class="dava-tracking-log">
+                            <thead>
+                                <tr>
+                                    <th><?php echo esc_html__('Event', 'dava-tracking'); ?></th>
+                                    <th><?php echo esc_html__('Order', 'dava-tracking'); ?></th>
+                                    <th><?php echo esc_html__('Attempt', 'dava-tracking'); ?></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php foreach ($retry_queue as $item) : ?>
+                                    <?php
+                                    $queued = is_array($item['event'] ?? null) ? $item['event'] : [];
+                                    $order_id = $queued['properties']['order_id'] ?? '';
+                                    ?>
+                                    <tr>
+                                        <td><code><?php echo esc_html($queued['event_name'] ?? ''); ?></code></td>
+                                        <td><?php echo $order_id !== '' ? esc_html('#' . $order_id) : esc_html__('n/a', 'dava-tracking'); ?></td>
+                                        <td>
+                                            <?php
+                                            echo esc_html(sprintf(
+                                                /* translators: 1: attempt number about to run, 2: maximum attempts */
+                                                __('%1$d of %2$d', 'dava-tracking'),
+                                                (int) ($item['attempt'] ?? 0) + 1,
+                                                Dava_Tracking_Event_Sender::RETRY_MAX_ATTEMPTS
+                                            ));
+                                            ?>
+                                        </td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                <?php endif; ?>
             </div>
 
             <div class="dava-tracking-card">
                 <div class="dava-tracking-card-head is-row">
                     <h2 class="dava-tracking-card-title"><?php echo esc_html__('Recent activity', 'dava-tracking'); ?></h2>
-                    <div class="dava-tracking-seg" id="dava-tracking-log-filter">
-                        <button type="button" data-filter="all" aria-pressed="true"><?php echo esc_html__('All', 'dava-tracking'); ?></button>
-                        <button type="button" data-filter="error" aria-pressed="false"><?php echo esc_html__('Errors', 'dava-tracking'); ?></button>
+                    <div class="dava-tracking-head-actions">
+                        <div class="dava-tracking-seg" id="dava-tracking-log-filter">
+                            <button type="button" data-filter="all" aria-pressed="true"><?php echo esc_html__('All', 'dava-tracking'); ?></button>
+                            <button type="button" data-filter="error" aria-pressed="false"><?php echo esc_html__('Errors', 'dava-tracking'); ?></button>
+                        </div>
+                        <button type="button" class="dava-tracking-btn is-small" id="dava-tracking-refresh"><?php echo esc_html__('Refresh', 'dava-tracking'); ?></button>
                     </div>
                 </div>
                 <div id="dava-tracking-log-empty" class="dava-tracking-empty" <?php echo empty($log) ? '' : 'hidden'; ?>>
@@ -1083,6 +1122,7 @@ class Dava_Tracking_Settings {
                         </tbody>
                     </table>
                 </div>
+            </div>
             </div>
         </section>
         <?php

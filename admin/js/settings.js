@@ -7,6 +7,7 @@
     initTabs();
     initDirtyState();
     initLogFilter();
+    initRefresh();
     initTestConnection();
   });
 
@@ -74,22 +75,65 @@
     });
   }
 
+  // Delegated on the document: Refresh swaps the whole activity block, so
+  // the filter buttons are new elements after every refresh.
   function initLogFilter() {
-    var filter = document.getElementById('dava-tracking-log-filter');
-    var body = document.getElementById('dava-tracking-log-body');
-    if (!filter || !body) {
-      return;
-    }
-
-    filter.addEventListener('click', function (event) {
-      var button = event.target.closest('button');
+    document.addEventListener('click', function (event) {
+      var button = event.target.closest('#dava-tracking-log-filter button');
       if (!button) {
         return;
       }
-      filter.querySelectorAll('button').forEach(function (other) {
+      document.querySelectorAll('#dava-tracking-log-filter button').forEach(function (other) {
         other.setAttribute('aria-pressed', other === button ? 'true' : 'false');
       });
       applyLogFilter();
+    });
+  }
+
+  // Reloads the page in the background and swaps in the retry queue, the
+  // activity log and the tab badge, so a refresh keeps unsaved edits on the
+  // other tabs and the selected filter.
+  function initRefresh() {
+    document.addEventListener('click', function (event) {
+      var button = event.target.closest('#dava-tracking-refresh');
+      if (!button || !settings) {
+        return;
+      }
+
+      var originalLabel = button.textContent;
+      var pressed = document.querySelector('#dava-tracking-log-filter button[aria-pressed="true"]');
+      var filter = pressed ? pressed.getAttribute('data-filter') : 'all';
+      button.disabled = true;
+      button.textContent = settings.refreshingLabel;
+
+      fetch(window.location.href, { credentials: 'same-origin' })
+        .then(function (response) {
+          return response.text();
+        })
+        .then(function (html) {
+          var doc = new DOMParser().parseFromString(html, 'text/html');
+          var data = doc.getElementById('dava-tracking-activity-data');
+          var current = document.getElementById('dava-tracking-activity-data');
+          if (!data || !current) {
+            return;
+          }
+          current.innerHTML = data.innerHTML;
+
+          var freshTab = doc.querySelector('.dava-tracking-tab[data-tab="activity"]');
+          var tab = document.querySelector('.dava-tracking-tab[data-tab="activity"]');
+          if (freshTab && tab) {
+            tab.innerHTML = freshTab.innerHTML;
+          }
+
+          document.querySelectorAll('#dava-tracking-log-filter button').forEach(function (other) {
+            other.setAttribute('aria-pressed', other.getAttribute('data-filter') === filter ? 'true' : 'false');
+          });
+          applyLogFilter();
+        })
+        .catch(function () {
+          button.disabled = false;
+          button.textContent = originalLabel;
+        });
     });
   }
 
@@ -98,6 +142,9 @@
     var body = document.getElementById('dava-tracking-log-body');
     var pressed = filter ? filter.querySelector('button[aria-pressed="true"]') : null;
     var onlyErrors = pressed && pressed.getAttribute('data-filter') === 'error';
+    if (!body) {
+      return;
+    }
 
     body.querySelectorAll('tr').forEach(function (row) {
       row.hidden = onlyErrors && row.getAttribute('data-status') !== 'error';
