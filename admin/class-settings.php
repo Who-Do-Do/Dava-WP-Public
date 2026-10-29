@@ -885,6 +885,7 @@ class Dava_Tracking_Settings {
             'would_send' => __('would be sent', 'dava-tracking'),
             'sent' => __('sent', 'dava-tracking'),
             'already_sent' => __('already sent', 'dava-tracking'),
+            'queued' => __('already queued', 'dava-tracking'),
             'no_value' => __('skipped, total is 0', 'dava-tracking'),
             'no_email' => __('skipped, no billing email', 'dava-tracking'),
             'no_consent' => __('skipped, no consent', 'dava-tracking'),

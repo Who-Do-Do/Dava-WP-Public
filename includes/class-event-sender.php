@@ -26,12 +26,32 @@ class Dava_Tracking_Event_Sender {
     const RETRY_DELAY_SECONDS = 900; // 15 minutes.
     const RETRY_HOOK = 'dava_tracking_process_retry_queue';
 
+    // Events that must not hold up the visitor's request (WooCommerce orders)
+    // are queued with queue_event() and sent by this hook right after the
+    // request, through the same queue and retry path as a failed send.
+    const DEFER_HOOK = 'dava_tracking_send_deferred';
+
+    // Default timeout. Deferred (cron), retried and backfill sends run with no
+    // visitor waiting, so they get the longer one.
+    const SEND_TIMEOUT_SECONDS = 5;
+
+    // A send inside a visitor's request (a form submit) passes this instead; a
+    // slow API must not hold the visitor for long. A timeout is retried by the
+    // queue above.
+    const INLINE_TIMEOUT_SECONDS = 2;
+
+    // The queue option is read, changed and written back by several requests
+    // at once (every checkout appends to it), so each change runs under a
+    // database lock. See with_queue_lock().
+    const QUEUE_LOCK_WAIT_SECONDS = 2;
+
     private static $instance = null;
 
     public static function instance() {
         if (self::$instance === null) {
             self::$instance = new self();
             add_action(self::RETRY_HOOK, [self::$instance, 'process_retry_queue']);
+            add_action(self::DEFER_HOOK, [self::$instance, 'process_retry_queue']);
         }
         return self::$instance;
     }
@@ -44,18 +64,26 @@ class Dava_Tracking_Event_Sender {
      *                      "unmatched server event" rather than failing.
      * @param int $attempt Internal — retry counter, do not pass when calling
      *                      this directly for a fresh event.
+     * @param int $timeout Seconds to wait for the API. Pass INLINE_TIMEOUT_SECONDS
+     *                      when a visitor's request is waiting on this send.
      * @return array|WP_Error Decoded JSON response body, or WP_Error on
      *                         transport failure / non-2xx response.
      */
-    public function send_event(array $event, $attempt = 0) {
+    public function send_event(array $event, $attempt = 0, $timeout = self::SEND_TIMEOUT_SECONDS) {
         $options = Dava_Tracking_Settings::get_options();
 
+        // These two exits fire the action too, so a listener (the WooCommerce
+        // module clears its queued marker there) sees every terminal outcome.
         if (empty($options['api_key'])) {
-            return $this->fail($event, __('Dáva API key is not configured.', 'dava-tracking'), 'dava_missing_api_key');
+            $result = $this->fail($event, __('Dáva API key is not configured.', 'dava-tracking'), 'dava_missing_api_key');
+            do_action('dava_tracking_event_sent', $event, $result);
+            return $result;
         }
 
         if (empty($event['event_type'])) {
-            return $this->fail($event, __('event_type is required.', 'dava-tracking'), 'dava_missing_event_type');
+            $result = $this->fail($event, __('event_type is required.', 'dava-tracking'), 'dava_missing_event_type');
+            do_action('dava_tracking_event_sent', $event, $result);
+            return $result;
         }
 
         // subdomain is required for correct domain attribution when calling
@@ -88,7 +116,7 @@ class Dava_Tracking_Event_Sender {
                 'Content-Type' => 'application/json',
             ],
             'body' => wp_json_encode($event),
-            'timeout' => 5,
+            'timeout' => (int) $timeout,
         ]);
 
         if (is_wp_error($response)) {
@@ -222,20 +250,150 @@ class Dava_Tracking_Event_Sender {
     }
 
     /**
-     * Runs on the scheduled retry hook — resends every queued event, letting
-     * send_event() re-queue (with an incremented attempt count) any that fail
-     * again. The queue is cleared up front so an event only reruns once per
-     * cron firing even if it fails again immediately.
+     * Queues an event to be sent by WP-Cron right after the current request,
+     * instead of inside it. Goes through the same queue as a retry, so a
+     * failed send is tried 3 times in all, 15 minutes apart. The result reaches the
+     * activity log and the dava_tracking_event_sent action like any other send.
+     */
+    public function queue_event(array $event) {
+        $this->with_queue_lock(function () use ($event) {
+            $queue = $this->read_queue();
+            $queue[] = ['event' => $event, 'attempt' => 0, 'due' => time()];
+            update_option(self::RETRY_OPTION_KEY, $queue, false);
+        });
+
+        wp_schedule_single_event(time(), self::DEFER_HOOK);
+    }
+
+    /**
+     * Whether an event with this transaction_id is waiting in the queue
+     * (first send or retry).
+     */
+    public function has_queued_transaction($transaction_id) {
+        foreach (get_option(self::RETRY_OPTION_KEY, []) as $item) {
+            if (isset($item['event']['transaction_id']) && (string) $item['event']['transaction_id'] === (string) $transaction_id) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Drops every queued event for this transaction_id (the privacy eraser
+     * uses it: the queued copy carries the visitor's session id and hashed
+     * email). Returns whether anything was dropped.
+     */
+    public function discard_queued_transaction($transaction_id) {
+        $dropped = false;
+        $this->with_queue_lock(function () use ($transaction_id, &$dropped) {
+            $queue = $this->read_queue();
+            $kept = [];
+            foreach ($queue as $item) {
+                if (isset($item['event']['transaction_id']) && (string) $item['event']['transaction_id'] === (string) $transaction_id) {
+                    $dropped = true;
+                } else {
+                    $kept[] = $item;
+                }
+            }
+            if ($dropped) {
+                update_option(self::RETRY_OPTION_KEY, $kept, false);
+            }
+        });
+        return $dropped;
+    }
+
+    /**
+     * The queue as stored right now. get_option() would answer from this
+     * process's object cache, which can predate another request's write; a
+     * change made on that copy would overwrite the other request's event.
+     */
+    private function read_queue() {
+        wp_cache_delete(self::RETRY_OPTION_KEY, 'options');
+        $notoptions = wp_cache_get('notoptions', 'options');
+        if (is_array($notoptions) && isset($notoptions[self::RETRY_OPTION_KEY])) {
+            unset($notoptions[self::RETRY_OPTION_KEY]);
+            wp_cache_set('notoptions', $notoptions, 'options');
+        }
+        $queue = get_option(self::RETRY_OPTION_KEY, []);
+        return is_array($queue) ? $queue : [];
+    }
+
+    /**
+     * Runs $change while holding a named MySQL/MariaDB lock (GET_LOCK), so two
+     * requests changing the queue at the same moment cannot overwrite each
+     * other. GET_LOCK waits on the database server, is released when the
+     * connection ends (a crashed request cannot leave it stuck), and needs
+     * nothing but the database every WordPress site has. A row-based mutex in
+     * wp_options was tried first and deadlocked under contention (InnoDB gap
+     * locks on the duplicate-key insert). If the lock cannot be taken within
+     * QUEUE_LOCK_WAIT_SECONDS (or the database has no GET_LOCK), the change
+     * runs anyway: holding a checkout longer is worse than the small chance of
+     * a lost update.
+     */
+    private function with_queue_lock(callable $change) {
+        global $wpdb;
+
+        $name = 'dava_queue_' . substr(md5($wpdb->prefix . DB_NAME), 0, 16);
+        $acquired = (int) $wpdb->get_var($wpdb->prepare('SELECT GET_LOCK(%s, %d)', $name, self::QUEUE_LOCK_WAIT_SECONDS)) === 1;
+
+        try {
+            $change();
+        } finally {
+            if ($acquired) {
+                $wpdb->get_var($wpdb->prepare('SELECT RELEASE_LOCK(%s)', $name));
+            }
+        }
+    }
+
+    /**
+     * Runs on the retry and deferred hooks — resends every queued event that
+     * is due, letting send_event() re-queue (with an incremented attempt
+     * count) any that fail again. Due items are taken out of the queue up
+     * front so an event only reruns once per cron firing even if it fails
+     * again immediately; items not due yet (a retry waiting out its 15
+     * minutes) stay and get their own run scheduled.
      */
     public function process_retry_queue() {
-        $queue = get_option(self::RETRY_OPTION_KEY, []);
-        if (empty($queue)) {
-            return;
-        }
-        update_option(self::RETRY_OPTION_KEY, [], false);
+        $due = [];
+        $this->with_queue_lock(function () use (&$due) {
+            $queue = $this->read_queue();
+            if (empty($queue)) {
+                return;
+            }
 
-        foreach ($queue as $item) {
+            $now = time();
+            $waiting = [];
+            foreach ($queue as $item) {
+                if (($item['due'] ?? 0) <= $now) {
+                    $due[] = $item;
+                } else {
+                    $waiting[] = $item;
+                }
+            }
+
+            if (!empty($due)) {
+                update_option(self::RETRY_OPTION_KEY, $waiting, false);
+            }
+        });
+
+        // Sent outside the lock: a send can take seconds, and a failed one
+        // re-queues itself through maybe_enqueue_retry().
+        foreach ($due as $item) {
             $this->send_event($item['event'], $item['attempt']);
+        }
+
+        $this->schedule_next_retry();
+    }
+
+    private function schedule_next_retry() {
+        $next = null;
+        foreach (get_option(self::RETRY_OPTION_KEY, []) as $item) {
+            $due = (int) ($item['due'] ?? 0);
+            $next = $next === null ? $due : min($next, $due);
+        }
+
+        if ($next !== null && !wp_next_scheduled(self::RETRY_HOOK)) {
+            wp_schedule_single_event(max($next, time()), self::RETRY_HOOK);
         }
     }
 
@@ -244,9 +402,11 @@ class Dava_Tracking_Event_Sender {
             return;
         }
 
-        $queue = get_option(self::RETRY_OPTION_KEY, []);
-        $queue[] = ['event' => $event, 'attempt' => $attempt + 1];
-        update_option(self::RETRY_OPTION_KEY, $queue, false);
+        $this->with_queue_lock(function () use ($event, $attempt) {
+            $queue = $this->read_queue();
+            $queue[] = ['event' => $event, 'attempt' => $attempt + 1, 'due' => time() + self::RETRY_DELAY_SECONDS];
+            update_option(self::RETRY_OPTION_KEY, $queue, false);
+        });
 
         if (!wp_next_scheduled(self::RETRY_HOOK)) {
             wp_schedule_single_event(time() + self::RETRY_DELAY_SECONDS, self::RETRY_HOOK);

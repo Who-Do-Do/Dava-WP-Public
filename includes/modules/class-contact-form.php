@@ -268,6 +268,6 @@ class Dava_Tracking_Contact_Form {
             $event['dava_session_id'] = $session_id;
         }
 
-        Dava_Tracking_Event_Sender::instance()->send_event($event);
+        Dava_Tracking_Event_Sender::instance()->send_event($event, 0, Dava_Tracking_Event_Sender::INLINE_TIMEOUT_SECONDS);
     }
 }

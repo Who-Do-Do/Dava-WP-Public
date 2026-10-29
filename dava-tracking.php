@@ -51,6 +51,9 @@ add_action('plugins_loaded', function () {
     Dava_Tracking_Listener::instance();
     Dava_Tracking_Test_Connection::instance();
     Dava_Tracking_Site_Health::instance();
+    // Registers the WP-Cron hooks that send queued events; a cron request
+    // never reaches a send_event() call, so nothing else would load them.
+    Dava_Tracking_Event_Sender::instance();
     // Registered unconditionally; each module itself no-ops when its target
     // plugin (CF7/WPForms/Gravity/WooCommerce) isn't active on this site.
     Dava_Tracking_Contact_Form::instance();
@@ -72,4 +75,5 @@ add_action('plugins_loaded', function () {
 
 register_deactivation_hook(__FILE__, function () {
     wp_clear_scheduled_hook(Dava_Tracking_Event_Sender::RETRY_HOOK);
+    wp_clear_scheduled_hook(Dava_Tracking_Event_Sender::DEFER_HOOK);
 });

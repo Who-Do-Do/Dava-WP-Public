@@ -14,3 +14,4 @@ delete_option('dava_tracking_retry_queue');
 delete_option('dava_tracking_connection_status');
 
 wp_clear_scheduled_hook('dava_tracking_process_retry_queue');
+wp_clear_scheduled_hook('dava_tracking_send_deferred');

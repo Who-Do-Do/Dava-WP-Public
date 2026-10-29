@@ -43,6 +43,12 @@ class Dava_Tracking_WooCommerce {
 
     const SESSION_META_KEY = '_dava_session_id';
     const SENT_META_KEY = '_dava_event_sent';
+    // Unix time the order was handed to the send queue. Not sent yet: it only
+    // keeps a second status change from queueing the order again. Ignored once
+    // older than QUEUED_MARKER_TTL (a send that never reported back must not
+    // block the order for good).
+    const QUEUED_META_KEY = '_dava_event_queued';
+    const QUEUED_MARKER_TTL = HOUR_IN_SECONDS;
     const CONSENT_META_KEY = '_dava_consent';
 
     // Line items sent per order. Keeps the /v1/events body small for an order
@@ -109,6 +115,7 @@ class Dava_Tracking_WooCommerce {
         add_action('woocommerce_store_api_checkout_update_order_from_request', [$this, 'capture_block_session_id'], 10, 2);
 
         add_action('woocommerce_order_status_changed', [$this, 'handle_order_status_changed'], 10, 4);
+        add_action('dava_tracking_event_sent', [$this, 'record_send_result'], 10, 2);
         add_action('admin_post_' . self::BACKFILL_ACTION, [$this, 'handle_backfill_request']);
         add_filter('wp_privacy_personal_data_erasers', [$this, 'register_privacy_eraser']);
         add_action('woocommerce_admin_order_data_after_order_details', [$this, 'render_dava_journey_link']);
@@ -149,7 +156,8 @@ class Dava_Tracking_WooCommerce {
      * meaningless once the session id is gone. _dava_event_sent is
      * deliberately NOT touched — it's an operational guard against
      * re-sending, not personal data about the visitor, and removing it could
-     * cause a duplicate send if the order is ever reprocessed.
+     * cause a duplicate send if the order is ever reprocessed. An order event
+     * still waiting in the send queue is dropped (see erase_personal_data).
      */
     public function register_privacy_eraser($erasers) {
         $erasers['dava-tracking-woocommerce'] = [
@@ -170,11 +178,17 @@ class Dava_Tracking_WooCommerce {
 
         $removed = false;
         foreach ($orders as $order) {
-            if ($order->get_meta(self::SESSION_META_KEY) === '' && $order->get_meta(self::CONSENT_META_KEY) === '') {
+            // An order event still waiting in the send queue holds a copy of
+            // the session id and the hashed email: drop it, so it is not sent
+            // after the erasure, and clear the queued marker with it.
+            $discarded = Dava_Tracking_Event_Sender::instance()->discard_queued_transaction($order->get_id());
+
+            if (!$discarded && $order->get_meta(self::SESSION_META_KEY) === '' && $order->get_meta(self::CONSENT_META_KEY) === '') {
                 continue;
             }
             $order->delete_meta_data(self::SESSION_META_KEY);
             $order->delete_meta_data(self::CONSENT_META_KEY);
+            $order->delete_meta_data(self::QUEUED_META_KEY);
             $order->save();
             $removed = true;
         }
@@ -400,7 +414,35 @@ class Dava_Tracking_WooCommerce {
             return;
         }
 
-        $this->send_conversion_event_for_order($order, $order_id, $to_status);
+        // Deferred: the status change can happen inside the shopper's Place
+        // Order request, which must not wait on the Dáva API.
+        $this->send_conversion_event_for_order($order, $order_id, $to_status, true);
+    }
+
+    /**
+     * Runs after every send attempt (live, deferred or retried). A queued
+     * order becomes "sent" only here, once Dáva has accepted it; when the
+     * attempt failed for good (nothing left in the retry queue) the queued
+     * marker is dropped so a later status change or a backfill can try again.
+     */
+    public function record_send_result($event, $result) {
+        if (($event['event_name'] ?? '') !== 'woocommerce_order_paid' || empty($event['transaction_id'])) {
+            return;
+        }
+
+        $order = wc_get_order((int) $event['transaction_id']);
+        if (!$order) {
+            return;
+        }
+
+        if (!is_wp_error($result)) {
+            $order->update_meta_data(self::SENT_META_KEY, '1');
+        } elseif (Dava_Tracking_Event_Sender::instance()->has_queued_transaction($event['transaction_id'])) {
+            return;
+        }
+
+        $order->delete_meta_data(self::QUEUED_META_KEY);
+        $order->save();
     }
 
     /**
@@ -409,11 +451,16 @@ class Dava_Tracking_WooCommerce {
      * and the backfill preview (which must answer this without acquiring the
      * lock or touching the network).
      *
-     * @return string One of: sent (eligible), already_sent, no_consent, no_email, no_value.
+     * @return string One of: sent (eligible), already_sent, queued, no_consent, no_email, no_value.
      */
     private function classify_order($order) {
         if ($order->get_meta(self::SENT_META_KEY)) {
             return 'already_sent';
+        }
+
+        $queued_at = (int) $order->get_meta(self::QUEUED_META_KEY);
+        if ($queued_at > 0 && time() - $queued_at < self::QUEUED_MARKER_TTL) {
+            return 'queued';
         }
 
         $options = Dava_Tracking_Settings::get_options();
@@ -440,9 +487,14 @@ class Dava_Tracking_WooCommerce {
      * can report a real breakdown (not just a total) of why orders were or
      * weren't sent.
      *
-     * @return string One of: sent, already_sent, no_consent, no_email, no_value, failed, locked.
+     * With $deferred the event is only queued (WP-Cron sends it right after
+     * the request) and 'queued' is returned; record_send_result() sets the
+     * sent mark when Dáva accepts it. Without it the event is sent inline and
+     * the result is known here (backfill, an admin request).
+     *
+     * @return string One of: sent, queued, already_sent, no_consent, no_email, no_value, failed, locked.
      */
-    private function send_conversion_event_for_order($order, $order_id, $to_status) {
+    private function send_conversion_event_for_order($order, $order_id, $to_status, $deferred = false) {
         $lock_key = 'dava_tracking_lock_order_' . $order_id;
         if (!add_option($lock_key, '1', '', 'no')) {
             return 'locked';
@@ -480,6 +532,13 @@ class Dava_Tracking_WooCommerce {
             $session_id = $this->normalize_session_id($order->get_meta(self::SESSION_META_KEY));
             if ($session_id !== '') {
                 $event['dava_session_id'] = $session_id;
+            }
+
+            if ($deferred) {
+                $order->update_meta_data(self::QUEUED_META_KEY, (string) time());
+                $order->save();
+                Dava_Tracking_Event_Sender::instance()->queue_event($event);
+                return 'queued';
             }
 
             $result = Dava_Tracking_Event_Sender::instance()->send_event($event);
@@ -596,8 +655,8 @@ class Dava_Tracking_WooCommerce {
         ]);
 
         $counts = $dry_run
-            ? ['would_send' => 0, 'already_sent' => 0, 'no_consent' => 0, 'no_email' => 0, 'no_value' => 0]
-            : ['sent' => 0, 'already_sent' => 0, 'no_consent' => 0, 'no_email' => 0, 'no_value' => 0, 'failed' => 0, 'locked' => 0];
+            ? ['would_send' => 0, 'already_sent' => 0, 'queued' => 0, 'no_consent' => 0, 'no_email' => 0, 'no_value' => 0]
+            : ['sent' => 0, 'already_sent' => 0, 'queued' => 0, 'no_consent' => 0, 'no_email' => 0, 'no_value' => 0, 'failed' => 0, 'locked' => 0];
 
         foreach ($orders as $order) {
             if ($dry_run) {
