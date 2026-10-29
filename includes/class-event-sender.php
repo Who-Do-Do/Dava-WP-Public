@@ -331,9 +331,23 @@ class Dava_Tracking_Event_Sender {
      * a lost update.
      */
     private function with_queue_lock(callable $change) {
+        $this->with_lock('dava_queue_', $change);
+    }
+
+    /**
+     * Same lock as above under its own name, for the activity log. A separate
+     * name keeps log writes from waiting behind queue changes, and a log()
+     * call made while the queue lock is held cannot ask for the same lock a
+     * second time.
+     */
+    private function with_log_lock(callable $change) {
+        $this->with_lock('dava_log_', $change);
+    }
+
+    private function with_lock($prefix, callable $change) {
         global $wpdb;
 
-        $name = 'dava_queue_' . substr(md5($wpdb->prefix . DB_NAME), 0, 16);
+        $name = $prefix . substr(md5($wpdb->prefix . DB_NAME), 0, 16);
         $acquired = (int) $wpdb->get_var($wpdb->prepare('SELECT GET_LOCK(%s, %d)', $name, self::QUEUE_LOCK_WAIT_SECONDS)) === 1;
 
         try {
@@ -434,14 +448,34 @@ class Dava_Tracking_Event_Sender {
         return new WP_Error($code, $message, $data);
     }
 
-    private function log(array $event, $status, $message) {
+    /**
+     * The activity log as stored right now, for the same reason as read_queue():
+     * a copy from this process's object cache can predate another request's
+     * line, and writing the list back would drop it.
+     */
+    private function read_log() {
+        wp_cache_delete(self::LOG_OPTION_KEY, 'options');
+        $notoptions = wp_cache_get('notoptions', 'options');
+        if (is_array($notoptions) && isset($notoptions[self::LOG_OPTION_KEY])) {
+            unset($notoptions[self::LOG_OPTION_KEY]);
+            wp_cache_set('notoptions', $notoptions, 'options');
+        }
         $log = get_option(self::LOG_OPTION_KEY, []);
-        array_unshift($log, [
+        return is_array($log) ? $log : [];
+    }
+
+    private function log(array $event, $status, $message) {
+        $entry = [
             'time' => time(),
             'event_name' => $event['event_name'] ?? ($event['event_type'] ?? ''),
             'status' => $status,
             'message' => $message,
-        ]);
-        update_option(self::LOG_OPTION_KEY, array_slice($log, 0, self::LOG_MAX_ENTRIES), false);
+        ];
+
+        $this->with_log_lock(function () use ($entry) {
+            $log = $this->read_log();
+            array_unshift($log, $entry);
+            update_option(self::LOG_OPTION_KEY, array_slice($log, 0, self::LOG_MAX_ENTRIES), false);
+        });
     }
 }
