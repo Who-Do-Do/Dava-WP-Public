@@ -4,7 +4,7 @@ Tags: analytics, tracking, conversion tracking, woocommerce, contact form 7
 Requires at least: 6.0
 Tested up to: 6.7
 Requires PHP: 8.0
-Stable tag: 1.1.1
+Stable tag: 1.1.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -74,6 +74,14 @@ No. Test Connection calls a dedicated verify-only endpoint (`GET /v1/verify`) th
 Yes. Go to **Plugins**, find Dáva Tracking, and click **Enable auto-updates** — this is a standard WordPress feature and works the same way as it does for any wordpress.org plugin. It's off by default; turn it on if you don't want to click Update by hand.
 
 == Changelog ==
+
+= 1.1.2 =
+* Fix: Place Order no longer waits for Dáva. A paid WooCommerce order is now queued when its status changes and sent a moment later by WP-Cron, so a slow or unresponsive Dáva API can no longer hold up checkout (it used to add up to 5 seconds). This applies to both the Block and the classic checkout.
+* Change: an order is marked as sent only after Dáva accepted it. Until then it shows in the Retry queue on the Activity tab, and failed sends keep the existing retry schedule.
+* Change: events sent while a visitor waits (form submissions) now give up after 2 seconds instead of 5. Orders, retries and **Resend past orders** run with nobody waiting and keep the 5 second limit.
+* Fix: the retry queue now also runs on requests that never send an event. Before, its WP-Cron hook was only registered after something sent an event, so queued retries could wait.
+* Change: **Resend past orders** still sends right away and now also counts orders that are already queued ("already queued").
+* Upgrade note: sending happens on the next WP-Cron run. On a site with `DISABLE_WP_CRON` set, make sure a system cron calls `wp-cron.php`, or orders stay in the Retry queue until it runs.
 
 = 1.1.1 =
 * Fix: the active tab no longer shows stray blue lines at its edges after a click.
